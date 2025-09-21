@@ -1,0 +1,249 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Age calculator</title>
+  <!-- optional: import Poppins -->
+  <link href="https://fonts.googleapis.com/css2?family=Poppins:wght@400;600;700&display=swap" rel="stylesheet">
+  <style>
+    * {
+        margin: 0;
+        padding: 0;
+        font-family: 'Poppins', sans-serif;
+        box-sizing: border-box;
+    }
+
+    .container {
+        width: 100%;
+        min-height: 100vh;
+        background: linear-gradient(135deg, #4203a9, #90bafc); /* fallback */
+        color: #fff;
+        padding: 10px;
+        transition: background 1s ease-in-out; /* smooth background change */
+        display: flex;
+        align-items: center;
+        justify-content: center;
+    }
+
+    .calculator {
+        width: 100%;
+        max-width: 600px;
+        margin: 40px;
+    }
+
+    .calculator h1 {
+        font-size: 48px;
+        line-height: 1;
+    }
+
+    .calculator h1 span {
+        color: #ffff76;
+    }
+
+    .input-box {
+        margin: 30px 0;
+        padding: 25px;
+        border-radius: 12px;
+        background: rgba(255, 255, 255, 0.12);
+        display: flex;
+        align-items: center;
+        gap: 12px;
+    }
+
+    .input-box input {
+        flex: 1;
+        margin-right: 0;
+        padding: 14px 18px;
+        border: 0;
+        outline: 0;
+        font-size: 18px;
+        border-radius: 8px;
+        position: relative;
+        background: rgba(255,255,255,0.06);
+        color: #fff;
+    }
+
+    .input-box input::placeholder { color: rgba(255,255,255,0.6); }
+
+    .input-box button {
+        background: #ffff76;
+        border: 0;
+        outline: 0;
+        padding: 12px 22px;
+        border-radius: 8px;
+        font-weight: 600;
+        color: #333;
+        cursor: pointer;
+        transition: transform 0.15s ease-in-out, box-shadow 0.15s;
+    }
+
+    /* Button hover/click effect */
+    .input-box button:hover {
+        transform: scale(1.05);
+        box-shadow: 0 6px 18px rgba(0,0,0,0.12);
+    }
+    .input-box button:active {
+        transform: scale(0.98);
+    }
+
+    .input-box input::-webkit-calendar-picker-indicator {
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        width: auto;
+        height: auto;
+        position: absolute;
+        background-position: calc(100% - 10px);
+        background-size: 30px;
+        cursor: pointer;
+    }
+
+    /* Result styling with animation */
+    #result {
+        font-size: 20px;
+        font-weight: bold;
+        margin-top: 18px;
+        padding: 14px;
+        border-radius: 8px;
+        background: rgba(255, 255, 255, 0.08);
+        color: #ffff76;
+        text-align: center;
+        opacity: 0;
+        transform: translateY(14px);
+        transition: all 0.45s ease-in-out;
+    }
+
+    /* When result is shown */
+    #result.show {
+        opacity: 1;
+        transform: translateY(0);
+        animation: glow 1.5s infinite alternate;
+    }
+
+    /* Glow effect */
+    @keyframes glow {
+        from {
+            text-shadow: 0 0 5px #ffff76, 0 0 10px #ffff76;
+        }
+        to {
+            text-shadow: 0 0 15px #fff, 0 0 30px #ffff76;
+        }
+    }
+
+    /* small responsive tweaks */
+    @media (max-width: 480px) {
+      .calculator h1 { font-size: 28px; }
+      .input-box { padding: 16px; flex-direction: column; gap: 10px; }
+      .input-box input { width: 100%; }
+      .input-box button { width: 100%; }
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <div class="calculator" role="main">
+      <h1>Javascript<br><span>Age calculator</span></h1>
+
+      <div class="input-box">
+        <input type="date" id="date" aria-label="Select your birth date">
+        <button id="calcBtn" type="button">Calculate</button>
+      </div>
+
+      <p id="result" aria-live="polite"></p>
+    </div>
+  </div>
+
+  <script>
+    // Elements
+    const userinput = document.getElementById("date");
+    const result = document.getElementById("result");
+    const calcBtn = document.getElementById("calcBtn");
+
+    // Set max date to today
+    userinput.max = new Date().toISOString().split("T")[0];
+
+    // Calculate when button clicked
+    calcBtn.addEventListener("click", calculateAge);
+
+    function calculateAge() {
+      if (!userinput.value) {
+        showResult("Please select a birth date.");
+        return;
+      }
+
+      const birthDate = new Date(userinput.value);
+      const today = new Date();
+
+      // get date parts (note: months are 0-11)
+      let bdDay = birthDate.getDate();
+      let bdMonth = birthDate.getMonth(); // 0-11
+      let bdYear = birthDate.getFullYear();
+
+      let tDay = today.getDate();
+      let tMonth = today.getMonth(); // 0-11
+      let tYear = today.getFullYear();
+
+      // initial differences
+      let years = tYear - bdYear;
+      let months = tMonth - bdMonth;
+      let days = tDay - bdDay;
+
+      // if days negative, borrow from previous month
+      if (days < 0) {
+        // previous month relative to 'today'
+        let prevMonth = tMonth - 1;
+        let prevMonthYear = tYear;
+        if (prevMonth < 0) {
+          prevMonth = 11;
+          prevMonthYear -= 1;
+        }
+        days += getDaysInMonth(prevMonthYear, prevMonth);
+        months -= 1;
+      }
+
+      // if months negative, borrow from years
+      if (months < 0) {
+        months += 12;
+        years -= 1;
+      }
+
+      // future date check
+      if (years < 0) {
+        showResult("The selected birth date is in the future. Please choose a valid date.");
+        return;
+      }
+
+      showResult(`You are ${years} years, ${months} months and ${days} days old.`);
+    }
+
+    function getDaysInMonth(year, monthIndex) {
+      // monthIndex: 0 (Jan) .. 11 (Dec)
+      return new Date(year, monthIndex + 1, 0).getDate();
+    }
+
+    // show result and trigger animation
+    function showResult(text) {
+      result.textContent = text;
+      // restart animation
+      result.classList.remove("show");
+      void result.offsetWidth; // force reflow to restart CSS animation
+      result.classList.add("show");
+    }
+
+    // Random gradient backgrounds (applies on load)
+    (function setRandomBackground(){
+      const gradients = [
+        "linear-gradient(135deg, #ff9a9e, #fad0c4)",   // Sunset glow
+        "linear-gradient(135deg, #36d1dc, #5b86e5)",   // Ocean breeze
+        "linear-gradient(135deg, #0f2027, #203a43, #2c5364)", // Galaxy vibes
+        "linear-gradient(135deg, #f093fb, #f5576c)",   // Pinkish purple
+        "linear-gradient(135deg, #43cea2, #185a9d)"    // Aqua green
+      ];
+      const randomGradient = gradients[Math.floor(Math.random() * gradients.length)];
+      document.querySelector(".container").style.background = randomGradient;
+    })();
+  </script>
+</body>
+</html>
